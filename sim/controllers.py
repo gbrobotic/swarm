@@ -62,7 +62,7 @@ def go_to_goal(x, y, theta, goal_x, goal_y,
     # Use wrap_angle() so the robot always turns the short way.
     # TODO: compute alpha
     alpha = wrap_angle(phi - theta)
-    # alpha =  phi - theta
+
     # STEP 6 - Proportional control laws.
     # TODO: v = k_v * d, but never more than v_max   (hint: min(a, b))
     # TODO: omega = k_omega * alpha
