@@ -32,7 +32,7 @@ class Robot:
         # The robot's "brain": decide speed and turning rate.
         self.v = 0.10         # 10 cm per second
         if self.x < WALL_MARGIN or self.x > ARENA - WALL_MARGIN or self.y < WALL_MARGIN or self.y > ARENA - WALL_MARGIN:
-            self.omega = 2.0      # turn if close to wall
+            self.omega = 1.0      # turn if close to wall
         else:
             self.omega = 0.0      # no turning: drive straight
 
@@ -45,7 +45,7 @@ class Robot:
 
 ARENA = 2.4   # arena side in metres (your 8 x 8 ft floor)
 DT = 0.05  # time step in seconds (20 updates per second)
-STEPS = 1200  # 400 x 0.05 s = 20 seconds of simulated time
+STEPS = 1200  # 1200x0.05 = 60 seconds of simulated time
 WALL_MARGIN = 0.15
 # robot = Robot(x=0.3, y=0.3, theta=math.radians(30))  # Initialize a robot at position (0.3, 0.3) with a heading of 30 degrees
 robot = Robot(x=1.2, y=1.2, theta=0)  # Initialize a robot at position (1.2, 1.2) with a heading of 0 degrees
@@ -98,3 +98,4 @@ plt.show()
 # Run it and check.
 # Fix it without changing WALL_MARGIN. You have two levers: v and ω. Which one would you change, and what are the trade-offs? (Think about what a real robot can and can’t do.)
 #my guess is that I would change v, as a slower speed would allow the robot to turn more quickly and avoid hitting the wall. The trade-off is that a slower speed would also mean that the robot would take longer to reach its destination.
+# i also changed omega to 1.0, as a faster turning rate would allow the robot to turn more quickly and avoid hitting the wall. The trade-off is that a faster turning rate would also mean that the robot would take longer to reach its destination.
