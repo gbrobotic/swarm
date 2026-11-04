@@ -31,7 +31,7 @@ DT = 0.05            # time step (s): 20 updates per simulated second
 STEPS = 1200         # 1200 x 0.05 s = 60 seconds of simulated time
 DRAW_EVERY = 5       # redraw the plot every 5 steps (drawing is slow; physics is not)
 
-FORWARD_SPEED = 0.15    # the brain's requested forward speed v (m/s). Experiment 4: try 0.15
+FORWARD_SPEED = 0.10     # the brain's requested forward speed v (m/s). Experiment 4: try 0.15
 TURN_RATE = 2.0          # the brain's requested turn rate near walls (rad/s)
 LIMIT_MODE = "scale"     # "scale" (correct) or "clamp" (experiment 4)
 
@@ -124,21 +124,41 @@ plt.show()                              # keep the window open at the end
 
 
 # ======================================================================
-# EXPERIMENT NOTES (my predictions and results)
+# EXPERIMENT NOTES
 # ======================================================================
-# Exp 1 - wheel puzzles (set MANUAL_WHEELS):
-#   (0.10, 0.10)  -> straight line
-#   (-0.05, 0.05) -> spins in place: r = 0, omega = 0.10 / 0.08 = 1.25 rad/s
-#   (0.05, 0.10)  -> v = 0.075 m/s, omega = 0.625 rad/s, r = 0.12 m
+# Format: Setup / Predicted / Observed / Why  (see phase1_goto.py)
 #
-# Exp 2 - scaling (default settings): printed numbers = ...
-#   Key idea: scaling both wheels scales v AND omega by the same factor,
-#   so r = v / omega does not change (0.05 m asked, 0.05 m got).
+# Exp 1 - wheel puzzles
+#   Setup     : MANUAL_WHEELS = (v_left, v_right)
+#   Predicted : (0.10, 0.10)  -> straight line
+#               (-0.05, 0.05) -> spins in place, r = 0, omega = 1.25 rad/s
+#               (0.05, 0.10)  -> v = 0.75, omega = 0.625, r = 1.2 m   (decimal slip)
+#   Observed  : straight line; spin in place; circle of radius 0.12 m (24 cm across)
+#   Why       : v = (0.10 + 0.05) / 2 = 0.075 m/s, omega = 0.05 / 0.08 = 0.625 rad/s,
+#               r = 0.075 / 0.625 = 0.12 m. Sanity check: one wheel twice as fast
+#               as the other is a SHARP turn, so 1.2 m could not be right.
 #
-# Exp 3 - escape test (default settings): result = ...
-#   Space available = 2.35 - 2.25 = 0.10 m; radius needed = 0.05 m -> fits.
-#   A SMALL turning radius is GOOD near a wall.
+# Exp 2 - motor limit scaling
+#   Setup     : default settings (v = 0.10, omega = 2.0, mode "scale")
+#   Predicted : v = 0.0833, omega = 2.0, r = 0.0417 m
+#   Observed  : wheels 0.0167 / 0.1500 m/s -> v = 0.0833 m/s, omega = 1.667 rad/s,
+#               r = 0.0500 m (exactly the radius that was asked for)
+#   Why       : scaling both wheels by 0.833 scales v AND omega by 0.833,
+#               so r = v / omega does not change. Same path, just slower.
 #
-# Exp 4 - scale vs clamp at FORWARD_SPEED = 0.15:
-#   scale -> result = ...
-#   clamp -> result = ...
+# Exp 3 - escape test with motor limits
+#   Setup     : default settings
+#   Predicted : escapes, because the turning radius is too small
+#   Observed  : stayed inside the arena
+#   Why       : space available = 2.35 - 2.25 = 0.10 m, radius needed = 0.05 m.
+#               A SMALL turning radius needs LESS space -> it is good near a wall.
+#
+# Exp 4 - scale vs clamp
+#   Setup     : FORWARD_SPEED = 0.15, LIMIT_MODE "scale" then "clamp"
+#   Predicted : clamp lets it turn away more easily
+#   Observed  : scale -> r = 0.075 m, stayed inside
+#               clamp -> omega dropped from 2.0 to 1.0, r = 0.110 m, ESCAPED
+#               (at v = 0.10 the two methods were almost the same: r 0.050 vs 0.052)
+#   Why       : clamping one wheel shrinks the DIFFERENCE between the wheels,
+#               so the robot turns less and the radius grows. 0.110 m > 0.10 m space.
+#               It only matters near top speed, where there is no headroom to turn.

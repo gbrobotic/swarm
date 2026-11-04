@@ -45,7 +45,7 @@ def go_to_goal(x, y, theta, goal_x, goal_y,
     dy = goal_y - y
 
     # STEP 2 - How far away is the goal?  d = sqrt(dx^2 + dy^2)
-    # TODO: compute d (hint: math.hypot(dx, dy) does exactly this)
+    # math.hypot does exactly this (Pythagoras).
     d = math.hypot(dx, dy)
 
     # STEP 3 - Close enough? Then stop. Without this the robot would keep
@@ -55,18 +55,23 @@ def go_to_goal(x, y, theta, goal_x, goal_y,
 
     # STEP 4 - Which direction is the goal?  phi = atan2(dy, dx)
     # atan2 (not atan!) handles all four quadrants correctly.
-    # TODO: compute phi
     phi = math.atan2(dy, dx)
 
     # STEP 5 - Heading error: how far must the robot still turn?
-    # Use wrap_angle() so the robot always turns the short way.
-    # TODO: compute alpha
+    # wrap_angle() keeps it between -pi and +pi, so the robot always turns
+    # the short way (see 3_angle_wrapping.png; experiment 4 shows why).
     alpha = wrap_angle(phi - theta)
 
-    # STEP 6 - Proportional control laws.
-    # TODO: v = k_v * d, but never more than v_max   (hint: min(a, b))
-    # TODO: omega = k_omega * alpha
-    v = min(k_v * d, v_max)
-    omega = k_omega * alpha
+    # STEP 6 - Proportional control laws: bigger error -> bigger correction.
+    v = min(k_v * d, v_max)        # far -> faster, but never above v_max
+    omega = k_omega * alpha        # facing the wrong way -> turn harder
+
+    # STEP 7 - "Turn first, then go" (experiment 3, see 4_goal_behind.png).
+    # Scale forward speed by how well the robot faces the goal:
+    #   alpha = 0 deg  (goal ahead)   -> cos = 1  -> full speed
+    #   alpha = 60 deg                -> cos = 0.5 -> half speed
+    #   alpha >= 90 deg (side/behind) -> cos <= 0 -> max() makes it 0: only turn
+    # max(0, ...) stops the robot from driving backwards when cos is negative.
     v = v * max(0.0, math.cos(alpha))
+
     return v, omega

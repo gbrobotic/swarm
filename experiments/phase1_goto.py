@@ -23,7 +23,7 @@ DT = 0.05            # time step (s) - 20 brain decisions per second
 DRAW_EVERY = 3       # redraw every 3 steps
 
 K_V = 0.5            # forward gain   (experiment 2 keeps this fixed)
-K_OMEGA = 50.0      # turning gain   (experiment 2: try 0.5, 3.0, 50.0)
+K_OMEGA = 3.0        # turning gain   (experiment 2: tried 0.5, 3.0, 50.0 -> 3.0 is best)
 
 
 # ======================================================================
@@ -112,7 +112,52 @@ while plt.fignum_exists(fig.number):        # True while the window is open
 # ======================================================================
 # EXPERIMENT NOTES
 # ======================================================================
-# Exp 1 - path shape: Click a goal to the upper-left of the robot. Is the path a straight line or a curve? Why? (Hint: what is the robot doing with v and ω at the same time?)  curve
-# Exp 2 - K_OMEGA = 0.5 / 3.0 / 50.0, prediction and result: Change K_OMEGA at the top of phase1_goto.py and try 0.5, then 3.0, then 50.0, always clicking the same goal. Predict each one first. For 50, watch the heading line very closely. What would that do to a real robot’s motors? # my prediction is lower K_OMEGA will result in a slower turning rate and a more gradual curve, while higher K_OMEGA will result in a faster turning rate and a sharper curve. for k_OMEGA = 50, the robot will turn very quickly and may overshoot the goal, resulting in oscillations around the goal. 
-# Exp 3 - goal behind the robot: Set K_OMEGA = 1.0, wait until the robot stops, then click directly behind it. What does the path look like? Then fix it by adding one line in go_to_goal,  # my guess path is curve, fix: the robot first turns toward the goal, and only starts driving when it’s roughly facing it. The green path is almost the straight line: 0.81 m instead of 0.99 m.
-# Exp 4 - wrapping removed:  the robot will turn the long way around to reach the goal, instead of the short way.  and rotating back and forth, oscillating around the goal. 
+# Format for every experiment:
+#   Setup     : what I changed and what I clicked (so I can repeat it)
+#   Predicted : what I expected BEFORE running (never edit this afterwards)
+#   Observed  : only what I actually saw / measured
+#   Why       : my explanation of the observation
+# Start: robot at (1.2, 1.2) facing right. Same goal for Exp 1 and 2: (0.6, 1.9).
+#
+# Exp 1 - path shape
+#   Setup     : K_OMEGA = 3.0, before the cos line was added, goal upper-left (0.6, 1.9)
+#   Predicted : a curve
+#   Observed  : smooth curve; 0.95 m driven vs 0.92 m straight line; 11.4 s
+#   Why       : the robot drives (v) and turns (omega) at the same time.
+#               Any motion with both v and omega is a curve, not a straight line.
+#
+# Exp 2 - turning gain K_OMEGA (with the cos line), same goal (0.6, 1.9)
+#   Predicted : low gain = gentle, wide curve; high gain = sharp turn;
+#               at 50 it would overshoot the goal and oscillate around it
+#   Observed  : 0.5  -> wide curve, 0.98 m, 13.4 s, slowest
+#               3.0  -> nearly straight, 0.91 m, 11.2 s, fastest
+#               50.0 -> reached the goal (0.90 m, 13.8 s) but the heading line
+#                       twitched left-right the whole way: turn direction flipped
+#                       262 times in 275 steps; total rotation 1657 deg instead of ~133
+#   Why       : the gain sets how hard the robot corrects. Too low = lazy,
+#               wide path. Too high = each 0.05 s step turns PAST the goal
+#               direction, the error flips sign, it turns back -> "chattering".
+#               It is the HEADING that oscillates, not the position around the goal.
+#               On real motors: ~20 direction reversals per second = current
+#               spikes, heat, gear wear, wasted battery, buzzing.
+#               Lesson: there is a best gain; higher is not always better.
+#
+# Exp 3 - goal directly behind the robot
+#   Setup     : K_OMEGA = 1.0, goal behind the robot at (0.4, 1.2)
+#   Predicted : a curve
+#   Observed  : without the cos line -> swings out wide, 0.99 m for a 0.80 m distance
+#               with the cos line    -> turns first, then drives, 0.81 m
+#   Why       : v only depended on distance, not on direction, so the robot drove
+#               forward (away from the goal) while turning. max(0, cos(alpha))
+#               gives 0 speed when the goal is beside or behind -> turn first, then go.
+#
+# Exp 4 - angle wrapping removed (alpha = phi - theta)
+#   Setup     : first goal (0.4, 1.2) so the robot ends facing left (183 deg),
+#               then goal (0.2, 1.0) below-left (direction -135 deg)
+#   Predicted : turns the long way; maybe oscillates around the goal
+#   Observed  : without wrapping -> spun 328 deg clockwise (long way), 6.9 s
+#               with wrapping    -> turned 46 deg anticlockwise (short way), 5.5 s
+#               no oscillation in either case
+#   Why       : -135 - 183 = -318 deg. Same direction as +42 deg, but the
+#               controller does not know that, so it turns -318 deg.
+#               wrap_angle() converts -318 deg to +42 deg -> short way.
